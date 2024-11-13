@@ -42,7 +42,7 @@ dependencies {
     androidTestImplementation(libs.espresso.core)
 
 
-        implementation("com.google.android.gms:play-services-ads:23.5.0") // Check for the latest version
+    implementation("com.google.android.gms:play-services-ads:23.5.0") // Check for the latest version
 
 
 

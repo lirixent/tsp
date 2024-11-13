@@ -1,6 +1,9 @@
 package com.example.tspdevotionaldraft;
 
+import android.view.View;
+
 import android.content.Intent;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.view.WindowInsets;
@@ -54,13 +57,15 @@ public class MainActivity extends AppCompatActivity {
      * Enable Edge-to-Edge UI for modern devices with system bar insets.
      */
     private void enableEdgeToEdgeUI() {
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R) {
-            // Android 11 and above - hides the system bars for a full-screen experience
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            // Android 11 (API 30) and above - Use InsetsController for hiding system bars
             getWindow().getInsetsController().hide(WindowInsets.Type.statusBars()); // Hide status bar
             getWindow().getInsetsController().hide(WindowInsets.Type.navigationBars()); // Hide navigation bar (optional)
-        } else if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.KITKAT) {
-            // Android 4.4 to Android 10 - Use the FLAG_FULLSCREEN for full-screen
-            getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
+        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+            // Android 4.4 (API 19) to Android 10 (API 29) - Use WindowInsetsController for fullscreen
+            // Ensure full-screen experience on older Android versions
+            getWindow().getDecorView().setSystemUiVisibility(
+                    View.SYSTEM_UI_FLAG_FULLSCREEN | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY);
         }
     }
 

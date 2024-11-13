@@ -19,7 +19,6 @@ public class AlarmReceiver extends BroadcastReceiver {
 
     private static final String CHANNEL_ID = "alarm_channel";  // Notification channel ID
     private static final int NOTIFICATION_ID = 1;  // Notification ID
-    private static final int REQUEST_CODE_PERMISSION = 100;  // Request code for permission
 
     @Override
     public void onReceive(Context context, Intent intent) {
@@ -69,7 +68,7 @@ public class AlarmReceiver extends BroadcastReceiver {
             } else {
                 // Request permission (this should be done in an Activity, not here)
                 Log.d("AlarmReceiver", "Notification permission is required.");
-                // Normally, this request should be triggered by an Activity, e.g., MainActivity
+                // Normally, this request should be triggered by an Activity (MainActivity or similar).
                 Intent permissionRequestIntent = new Intent(context, MainActivity.class);
                 permissionRequestIntent.putExtra("requestNotificationPermission", true);
                 permissionRequestIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);

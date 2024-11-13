@@ -1,12 +1,8 @@
 package com.example.tspdevotionaldraft;
 
-
-
-import android.app.TimePickerDialog;
-
-import android.Manifest;
 import android.app.AlarmManager;
 import android.app.PendingIntent;
+import android.app.TimePickerDialog;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -14,9 +10,6 @@ import android.media.RingtoneManager;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
-import android.os.Environment;
-import android.util.Log;
-import android.view.View;
 import android.widget.Button;
 import android.widget.Toast;
 
@@ -24,11 +17,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import android.content.pm.PackageManager;
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
+
 import java.util.Calendar;
 
 public class SecondActivity extends AppCompatActivity {
@@ -37,7 +26,6 @@ public class SecondActivity extends AppCompatActivity {
     private static final String TIMER_SET_KEY = "TimerSet";
     private static final int ALARM_REQUEST_CODE = 100;
     private static final int REQUEST_CODE_NOTIFICATION_PERMISSION = 1;
-    private static final int REQUEST_CODE_STORAGE_PERMISSION = 2;
 
     private Button setAlarmButton;
     private Button setSoundButton;
@@ -115,20 +103,27 @@ public class SecondActivity extends AppCompatActivity {
 
         AlarmManager alarmManager = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
 
-        if (alarmManager != null && alarmManager.canScheduleExactAlarms()) {
-            Intent intent = new Intent(this, AlarmReceiver.class);
-            intent.putExtra("alarmSound", alarmSoundUri.toString());
-
-            PendingIntent pendingIntent = PendingIntent.getBroadcast(this, ALARM_REQUEST_CODE, intent, PendingIntent.FLAG_UPDATE_CURRENT);
-
-            // Schedule the exact alarm
-            alarmManager.setExact(AlarmManager.RTC_WAKEUP, calendar.getTimeInMillis(), pendingIntent);
-        } else {
-            // Handle case where exact alarms are not allowed (fallback)
-            Toast.makeText(this, "Exact alarms cannot be scheduled. Please allow the app to schedule alarms.", Toast.LENGTH_LONG).show();
-            // Optionally, schedule a non-exact alarm
-            alarmManager.set(AlarmManager.RTC_WAKEUP, calendar.getTimeInMillis(), pendingIntent);
+        if (alarmManager != null) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) { // API level 31 and above
+                if (alarmManager.canScheduleExactAlarms()) {
+                    // Schedule exact alarm
+                    alarmManager.setExact(AlarmManager.RTC_WAKEUP, calendar.getTimeInMillis(), getPendingIntent());
+                } else {
+                    // Handle case where exact alarms cannot be scheduled
+                    Toast.makeText(this, "Exact alarms cannot be scheduled. Please allow the app to schedule alarms.", Toast.LENGTH_LONG).show();
+                    alarmManager.set(AlarmManager.RTC_WAKEUP, calendar.getTimeInMillis(), getPendingIntent());
+                }
+            } else {
+                // For devices with lower than API level 31, just set the alarm as normal
+                alarmManager.setExact(AlarmManager.RTC_WAKEUP, calendar.getTimeInMillis(), getPendingIntent());
+            }
         }
+    }
+
+    private PendingIntent getPendingIntent() {
+        Intent intent = new Intent(this, AlarmReceiver.class);
+        intent.putExtra("alarmSound", alarmSoundUri.toString());
+        return PendingIntent.getBroadcast(this, ALARM_REQUEST_CODE, intent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
     }
 
     private void goToThirdActivity() {
@@ -140,8 +135,8 @@ public class SecondActivity extends AppCompatActivity {
     private void checkAndRequestNotificationPermission() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             // Check if the POST_NOTIFICATIONS permission is granted (API 33+)
-            if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
-                ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.POST_NOTIFICATIONS}, REQUEST_CODE_NOTIFICATION_PERMISSION);
+            if (ContextCompat.checkSelfPermission(this, android.Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+                ActivityCompat.requestPermissions(this, new String[]{android.Manifest.permission.POST_NOTIFICATIONS}, REQUEST_CODE_NOTIFICATION_PERMISSION);
             } else {
                 showTimePickerDialog();
             }
@@ -160,51 +155,6 @@ public class SecondActivity extends AppCompatActivity {
             } else {
                 Toast.makeText(this, "Notification permission is required to set an alarm.", Toast.LENGTH_LONG).show();
             }
-        } else if (requestCode == REQUEST_CODE_STORAGE_PERMISSION) {
-            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                saveAudioToExternalStorage();
-            } else {
-                Toast.makeText(this, "Storage permission required to save audio.", Toast.LENGTH_LONG).show();
-            }
-        }
-    }
-
-    private void saveAudioToExternalStorage() {
-        // Check if storage permission is granted (for devices below Android 10)
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
-            if (ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
-                ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, REQUEST_CODE_STORAGE_PERMISSION);
-                return;
-            }
-        }
-
-        try {
-            if (Environment.MEDIA_MOUNTED.equals(Environment.getExternalStorageState())) {
-                File externalStorageDirectory = Environment.getExternalStorageDirectory();
-                File audioFile = new File(externalStorageDirectory, "devotional_audio.mp3");
-
-                if (!audioFile.exists()) {
-                    audioFile.createNewFile();
-                }
-
-                InputStream inputStream = getAssets().open("devotional_audio.mp3");
-                OutputStream outputStream = new FileOutputStream(audioFile);
-
-                byte[] buffer = new byte[1024];
-                int length;
-                while ((length = inputStream.read(buffer)) > 0) {
-                    outputStream.write(buffer, 0, length);
-                }
-
-                inputStream.close();
-                outputStream.close();
-
-                Log.d("SaveAudio", "Audio file saved to external storage at: " + audioFile.getAbsolutePath());
-            } else {
-                Log.e("SaveAudio", "External storage not available for writing.");
-            }
-        } catch (IOException e) {
-            Log.e("SaveAudio", "Error saving audio to external storage", e);
         }
     }
 }
