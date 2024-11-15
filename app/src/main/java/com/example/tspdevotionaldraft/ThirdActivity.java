@@ -2,13 +2,23 @@ package com.example.tspdevotionaldraft;
 
 import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.util.Log;
+import android.webkit.WebChromeClient;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.Button;
 import android.widget.Toast;
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+
+import com.google.android.gms.ads.AdRequest;
+import com.google.android.gms.ads.AdError;
+import com.google.android.gms.ads.FullScreenContentCallback;
+import com.google.android.gms.ads.LoadAdError;
+import com.google.android.gms.ads.interstitial.InterstitialAd;
+import com.google.android.gms.ads.interstitial.InterstitialAdLoadCallback;
 
 public class ThirdActivity extends AppCompatActivity {
 
@@ -20,10 +30,12 @@ public class ThirdActivity extends AppCompatActivity {
     private Button nextButton, previousButton;
     private int currentDay = 1; // Start from Day 1
 
+    private InterstitialAd interstitialAd;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_third); // Set the layout for this activity
+        setContentView(R.layout.activity_third);
 
         // Initialize views
         webView = findViewById(R.id.webView);
@@ -32,24 +44,47 @@ public class ThirdActivity extends AppCompatActivity {
 
         // Load stored preferences for the current day
         loadPreferences();
-        loadHtmlPage(currentDay);  // Load HTML page for the current day
+        loadHtmlPage(currentDay);
+
+        // Load the first interstitial ad
+        loadInterstitialAd();
 
         // Set button listeners
         nextButton.setOnClickListener(v -> {
-            if (currentDay < 90) {  // Ensure we don’t go beyond Day 90
-                currentDay++;
-                loadHtmlPage(currentDay);
-                savePreferences();  // Save updated current day
+            if (currentDay < 90) {
+                if (interstitialAd != null) {
+                    interstitialAd.show(ThirdActivity.this);
+                    interstitialAd.setFullScreenContentCallback(new FullScreenContentCallback() {
+                        @Override
+                        public void onAdDismissedFullScreenContent() {
+                            loadInterstitialAd();
+                            currentDay++;
+                            loadHtmlPage(currentDay);
+                            savePreferences();
+                        }
+
+                        @Override
+                        public void onAdFailedToShowFullScreenContent(@NonNull AdError adError) {
+                            currentDay++;
+                            loadHtmlPage(currentDay);
+                            savePreferences();
+                        }
+                    });
+                } else {
+                    currentDay++;
+                    loadHtmlPage(currentDay);
+                    savePreferences();
+                }
             } else {
                 Toast.makeText(this, "You have completed all days!", Toast.LENGTH_SHORT).show();
             }
         });
 
         previousButton.setOnClickListener(v -> {
-            if (currentDay > 1) {  // Ensure we don’t go below Day 1
+            if (currentDay > 1) {
                 currentDay--;
                 loadHtmlPage(currentDay);
-                savePreferences();  // Save updated current day
+                savePreferences();
             } else {
                 Toast.makeText(this, "This is the first day!", Toast.LENGTH_SHORT).show();
             }
@@ -62,12 +97,16 @@ public class ThirdActivity extends AppCompatActivity {
     private void loadHtmlPage(int day) {
         String fileName = ASSET_PATH + day + ".html";
 
-        // Enable JavaScript if required by the HTML
+        // Configure WebView settings for security
         WebSettings webSettings = webView.getSettings();
-        webSettings.setJavaScriptEnabled(true);
+        webSettings.setJavaScriptEnabled(true); // Enable JavaScript if necessary
+        webSettings.setAllowFileAccess(false); // Disable file access
+        webSettings.setAllowContentAccess(false); // Disable content access
+        webSettings.setGeolocationEnabled(false); // Disable geolocation
 
-        webView.setWebViewClient(new WebViewClient());  // Open links in WebView
-        webView.loadUrl(fileName);  // Load HTML file from assets
+        webView.setWebViewClient(new WebViewClient());
+        webView.setWebChromeClient(new WebChromeClient());
+        webView.loadUrl(fileName);
     }
 
     /**
@@ -75,7 +114,7 @@ public class ThirdActivity extends AppCompatActivity {
      */
     private void loadPreferences() {
         SharedPreferences prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
-        currentDay = prefs.getInt(PREF_CURRENT_DAY, 1);  // Default to Day 1 if no preference found
+        currentDay = prefs.getInt(PREF_CURRENT_DAY, 1); // Default to Day 1 if no preference found
     }
 
     /**
@@ -84,7 +123,28 @@ public class ThirdActivity extends AppCompatActivity {
     private void savePreferences() {
         SharedPreferences prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
         SharedPreferences.Editor editor = prefs.edit();
-        editor.putInt(PREF_CURRENT_DAY, currentDay);  // Save the current day
-        editor.apply();  // Commit the changes
+        editor.putInt(PREF_CURRENT_DAY, currentDay);
+        editor.apply();
+    }
+
+    /**
+     * Load an interstitial ad.
+     */
+    private void loadInterstitialAd() {
+        AdRequest adRequest = new AdRequest.Builder().build();
+
+        InterstitialAd.load(this, "ca-app-pub-3940256099942544/1033173712", adRequest,
+                new InterstitialAdLoadCallback() {
+                    @Override
+                    public void onAdLoaded(@NonNull InterstitialAd ad) {
+                        interstitialAd = ad;
+                    }
+
+                    @Override
+                    public void onAdFailedToLoad(@NonNull LoadAdError adError) {
+                        interstitialAd = null;
+                        Log.d("AdLoad", "Failed to load interstitial ad: " + adError.getMessage());
+                    }
+                });
     }
 }

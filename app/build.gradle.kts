@@ -4,7 +4,7 @@ plugins {
 
 android {
     namespace = "com.example.tspdevotionaldraft"
-    compileSdk = 34
+    compileSdk = 35
 
     defaultConfig {
         applicationId = "com.example.tspdevotionaldraft"
@@ -25,14 +25,19 @@ android {
             )
         }
     }
+
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
+
+    // Corrected: Closing the `tasks.withType<JavaCompile>` block
+    tasks.withType<JavaCompile> {
+        options.compilerArgs.add("-Xlint")
+    }
 }
 
 dependencies {
-
     implementation(libs.appcompat)
     implementation(libs.material)
     implementation(libs.activity)
@@ -41,9 +46,8 @@ dependencies {
     androidTestImplementation(libs.ext.junit)
     androidTestImplementation(libs.espresso.core)
 
+    implementation("androidx.work:work-runtime:2.8.2")
 
-    implementation("com.google.android.gms:play-services-ads:23.5.0") // Check for the latest version
-
-
-
+    // Removed the AdMob dependency as requested
+     implementation("com.google.android.gms:play-services-ads:23.5.0")
 }
