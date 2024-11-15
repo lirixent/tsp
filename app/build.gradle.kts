@@ -46,7 +46,7 @@ dependencies {
     androidTestImplementation(libs.ext.junit)
     androidTestImplementation(libs.espresso.core)
 
-    implementation("androidx.work:work-runtime:2.8.2")
+    implementation("androidx.work:work-runtime:2.10.0")
 
     // Removed the AdMob dependency as requested
      implementation("com.google.android.gms:play-services-ads:23.5.0")
