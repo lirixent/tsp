@@ -1,0 +1,12 @@
+<resources>
+    <string name="app_name">Tsp Devotional draft</string>
+
+    <string name="devotion_time_text">Set the perfect time for your daily devotion</string>
+    <string name="set_alarm_text">Set Alarm</string>
+    <string name="previous_button_text">Previous</string>
+    <string name="next_button_text">Next</string>
+    <string name="background_image_description">Infographic background image</string>
+    <string name="set_alarm_sound_text">Set Alarm Sound</string>
+
+
+</resources>
